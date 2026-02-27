@@ -8,6 +8,22 @@ export interface Todo {
   createdAt: string
 }
 
+export interface PendingUpdateRequest {
+  id: number
+  todoId: number
+  todoTitle: string
+  requestedByUserId: string
+  requestedAt: string
+}
+
+export interface UpdateResponse {
+  id: number
+  todoId: number
+  todoTitle: string
+  response: string
+  respondedAt: string
+}
+
 export type UserId = 'Jamie' | 'Ellie'
 
 export const IMPORTANCE_LEVELS = [

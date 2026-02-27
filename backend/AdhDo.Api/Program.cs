@@ -43,6 +43,17 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+    // Ensure UpdateRequests table exists for databases created before this table was added
+    db.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS ""UpdateRequests"" (
+            ""Id"" INTEGER NOT NULL CONSTRAINT ""PK_UpdateRequests"" PRIMARY KEY AUTOINCREMENT,
+            ""TodoId"" INTEGER NOT NULL,
+            ""RequestedByUserId"" TEXT NOT NULL,
+            ""RequestedAt"" TEXT NOT NULL,
+            ""Response"" TEXT,
+            ""RespondedAt"" TEXT,
+            ""ResponseDismissed"" INTEGER NOT NULL DEFAULT 0
+        )");
 }
 
 app.UseAuthorization();

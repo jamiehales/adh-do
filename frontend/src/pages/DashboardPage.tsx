@@ -1,17 +1,34 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   Box, Button, Card, CardContent, Chip,
-  CircularProgress, Stack, Typography,
+  CircularProgress, Stack, Tooltip, Typography,
 } from '@mui/material'
 import { getTodosForUser } from '../api/todos'
-import type { Todo, UserId } from '../types'
+import {
+  getPendingUpdateRequests,
+  getUpdateResponses,
+  getOutgoingRequestedTodoIds,
+} from '../api/updateRequests'
+import type { PendingUpdateRequest, Todo, UpdateResponse, UserId } from '../types'
 import MakeRequestModal from '../components/MakeRequestModal'
 import AskForUpdateList from '../components/AskForUpdateList'
+import RespondToUpdateModal from '../components/RespondToUpdateModal'
+import UpdateResponseModal from '../components/UpdateResponseModal'
 
 const OTHER_USER: Record<string, UserId> = {
   Jamie: 'Ellie',
   Ellie: 'Jamie',
+}
+
+const buzzKeyframes = {
+  '@keyframes buzz': {
+    '0%, 100%': { transform: 'rotate(0deg) scale(1)' },
+    '20%': { transform: 'rotate(-8deg) scale(1.05)' },
+    '40%': { transform: 'rotate(8deg) scale(1.05)' },
+    '60%': { transform: 'rotate(-5deg) scale(1.02)' },
+    '80%': { transform: 'rotate(5deg) scale(1.02)' },
+  },
 }
 
 export default function DashboardPage() {
@@ -25,6 +42,13 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [showAskForUpdate, setShowAskForUpdate] = useState(false)
   const [showMakeRequest, setShowMakeRequest] = useState(false)
+
+  // Update request state
+  const [pendingRequests, setPendingRequests] = useState<PendingUpdateRequest[]>([])
+  const [pendingResponses, setPendingResponses] = useState<UpdateResponse[]>([])
+  const [outgoingTodoIds, setOutgoingTodoIds] = useState<number[]>([])
+  const [activeRequest, setActiveRequest] = useState<PendingUpdateRequest | null>(null)
+  const [activeResponse, setActiveResponse] = useState<UpdateResponse | null>(null)
 
   const fetchTodos = useCallback(async () => {
     if (!userId || !otherUser) return
@@ -41,15 +65,59 @@ export default function DashboardPage() {
     }
   }, [userId, otherUser])
 
+  const fetchUpdateData = useCallback(async () => {
+    if (!userId) return
+    try {
+      const [pending, responses, outgoing] = await Promise.all([
+        getPendingUpdateRequests(userId),
+        getUpdateResponses(userId),
+        getOutgoingRequestedTodoIds(userId),
+      ])
+      setPendingRequests(pending)
+      setPendingResponses(responses)
+      setOutgoingTodoIds(outgoing)
+    } catch {
+      // silently ignore polling errors
+    }
+  }, [userId])
+
   useEffect(() => {
     if (!userId || !otherUser) {
       navigate('/')
       return
     }
     fetchTodos()
-  }, [userId, otherUser, fetchTodos, navigate])
+    fetchUpdateData()
+  }, [userId, otherUser, fetchTodos, fetchUpdateData, navigate])
+
+  // Poll every 8 seconds
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    pollRef.current = setInterval(fetchUpdateData, 8000)
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [fetchUpdateData])
 
   const topTask = myTodos[0] ?? null
+
+  const handleBadgeClick = () => {
+    if (pendingRequests.length > 0) setActiveRequest(pendingRequests[0])
+  }
+
+  const handleResponseBubbleClick = () => {
+    if (pendingResponses.length > 0) setActiveResponse(pendingResponses[0])
+  }
+
+  const handleRequestResponded = () => {
+    setActiveRequest(null)
+    fetchUpdateData()
+  }
+
+  const handleResponseDismissed = () => {
+    setActiveResponse(null)
+    fetchUpdateData()
+  }
 
   return (
     <Box
@@ -186,8 +254,15 @@ export default function DashboardPage() {
       </Stack>
 
       {/* Other user's todo list */}
-      {showAskForUpdate && otherUser && (
-        <AskForUpdateList todos={otherTodos} otherUser={otherUser} loading={loading} />
+      {showAskForUpdate && otherUser && userId && (
+        <AskForUpdateList
+          todos={otherTodos}
+          otherUser={otherUser}
+          loading={loading}
+          currentUser={userId as UserId}
+          pendingRequestedTodoIds={outgoingTodoIds}
+          onRequestSent={fetchUpdateData}
+        />
       )}
 
       {/* Make request modal */}
@@ -198,6 +273,142 @@ export default function DashboardPage() {
           currentUser={userId as UserId}
           otherUser={otherUser}
           onCreated={fetchTodos}
+        />
+      )}
+
+      {/* ? badge — shown when this user has pending update requests to respond to */}
+      {pendingRequests.length > 0 && (
+        <Tooltip title={`${pendingRequests.length} update request${pendingRequests.length > 1 ? 's' : ''} pending`}>
+          <Box
+            onClick={handleBadgeClick}
+            sx={{
+              position: 'fixed',
+              bottom: 28,
+              right: 28,
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
+              boxShadow: '0 4px 20px rgba(124, 58, 237, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              userSelect: 'none',
+              animation: 'buzz 0.6s ease-in-out infinite',
+              ...buzzKeyframes,
+              '&:hover': { opacity: 0.9 },
+            }}
+          >
+            <Typography sx={{ fontSize: '1.4rem', lineHeight: 1, color: '#fff', fontWeight: 700 }}>
+              ?
+            </Typography>
+            {pendingRequests.length > 1 && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  bgcolor: '#f43f5e',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Typography sx={{ fontSize: '0.65rem', color: '#fff', fontWeight: 700, lineHeight: 1 }}>
+                  {pendingRequests.length}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Tooltip>
+      )}
+
+      {/* ... bubble — shown when this user has update responses to view */}
+      {pendingResponses.length > 0 && (
+        <Tooltip title={`${pendingResponses.length} update${pendingResponses.length > 1 ? 's' : ''} received`}>
+          <Box
+            onClick={handleResponseBubbleClick}
+            sx={{
+              position: 'fixed',
+              bottom: pendingRequests.length > 0 ? 92 : 28,
+              right: 28,
+              minWidth: 52,
+              height: 52,
+              px: 1.5,
+              borderRadius: '26px',
+              bgcolor: 'background.paper',
+              border: '2px solid rgba(167, 139, 250, 0.5)',
+              boxShadow: '0 4px 20px rgba(124, 58, 237, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '3px',
+              cursor: 'pointer',
+              userSelect: 'none',
+              animation: 'buzz 0.6s ease-in-out infinite',
+              animationDelay: '0.15s',
+              ...buzzKeyframes,
+              '&:hover': { borderColor: 'primary.light' },
+            }}
+          >
+            {[0, 1, 2].map(i => (
+              <Box
+                key={i}
+                sx={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  bgcolor: 'primary.light',
+                  animation: 'dotBounce 1s ease-in-out infinite',
+                  animationDelay: `${i * 0.15}s`,
+                  '@keyframes dotBounce': {
+                    '0%, 80%, 100%': { transform: 'scale(0.8)', opacity: 0.5 },
+                    '40%': { transform: 'scale(1.2)', opacity: 1 },
+                  },
+                }}
+              />
+            ))}
+            {pendingResponses.length > 1 && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  bgcolor: '#f43f5e',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Typography sx={{ fontSize: '0.65rem', color: '#fff', fontWeight: 700, lineHeight: 1 }}>
+                  {pendingResponses.length}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Tooltip>
+      )}
+
+      {/* Respond to update request modal */}
+      {activeRequest && (
+        <RespondToUpdateModal
+          request={activeRequest}
+          onDone={handleRequestResponded}
+        />
+      )}
+
+      {/* View update response modal */}
+      {activeResponse && (
+        <UpdateResponseModal
+          response={activeResponse}
+          onDismissed={handleResponseDismissed}
         />
       )}
     </Box>
