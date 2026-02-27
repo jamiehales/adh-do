@@ -6,8 +6,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+var dataDir = builder.Configuration["DataDirectory"] ?? "data";
+Directory.CreateDirectory(dataDir);
+var dbPath = Path.Combine(dataDir, "adh-do.db");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=adh-do.db"));
+    options.UseSqlite($"Data Source={dbPath}"));
 
 if (builder.Environment.IsDevelopment())
 {
