@@ -3,7 +3,7 @@ FROM node:20-alpine AS frontend-build
 
 WORKDIR /frontend
 
-COPY frontend/package.json frontend/yarn.lock* ./
+COPY frontend/package.json frontend/.yarnrc.yml frontend/yarn.lock* ./
 RUN corepack enable && yarn install --immutable
 
 COPY frontend/ .
