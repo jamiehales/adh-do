@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { clearUserCookie } from './UserPickerPage'
 import {
   Box, Button, Card, CardContent,
   CircularProgress, IconButton, Stack, Tooltip, Typography,
@@ -151,13 +152,13 @@ export default function DashboardPage() {
       {/* Header */}
       <Box sx={{ width: '100%', maxWidth: 480, display: 'flex', alignItems: 'center', gap: 1 }}>
         <Button
-          onClick={() => navigate('/')}
+          onClick={() => { clearUserCookie(); navigate('/') }}
           sx={{ color: 'text.secondary', minWidth: 'auto', px: 1, borderRadius: '8px' }}
         >
           ←
         </Button>
         <Typography variant="h5" fontWeight={700}>
-          Hi, {userId} 👋
+          Hi, {userId}
         </Typography>
 
         <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -251,9 +252,9 @@ export default function DashboardPage() {
 
       <Box sx={{ width: '100%', maxWidth: 480 }}>
         <Typography
-          variant="overline"
+          variant="h6"
           color="text.secondary"
-          sx={{ letterSpacing: '0.08em', fontSize: '0.7rem', display: 'block', textAlign: 'center' }}
+          sx={{ letterSpacing: '0.08em', display: 'block', textAlign: 'center' }}
         >
           What would help your {otherUser} the most
         </Typography>
@@ -352,7 +353,7 @@ export default function DashboardPage() {
               </Box>
             ) : (
               <Typography color="text.secondary" textAlign="center" sx={{ width: '100%' }}>
-                Nothing on your plate right now 🎉
+                Nothing on your plate right now
               </Typography>
             )}
           </CardContent>
@@ -361,7 +362,7 @@ export default function DashboardPage() {
 
       {/* Remaining tasks */}
       {remainingTasks.length > 0 && (
-        <Box sx={{ width: '100%', maxWidth: 480 }}>
+        <Box sx={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Button
             variant="text"
             size="small"

@@ -1,5 +1,22 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Card, CardActionArea, CardContent, Typography } from '@mui/material'
+
+const COOKIE_NAME = 'adh_do_user'
+const VALID_USERS = ['Jamie', 'Ellie']
+
+function getCookieUser(): string | null {
+  const match = document.cookie.match(/(?:^|;\s*)adh_do_user=([^;]+)/)
+  return match ? match[1] : null
+}
+
+export function setUserCookie(userId: string) {
+  document.cookie = `${COOKIE_NAME}=${userId}; path=/; max-age=${60 * 60 * 24 * 365}`
+}
+
+export function clearUserCookie() {
+  document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`
+}
 
 const users = [
   { id: 'Jamie', emoji: '🙋' },
@@ -8,6 +25,13 @@ const users = [
 
 export default function UserPickerPage() {
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const saved = getCookieUser()
+    if (saved && VALID_USERS.includes(saved)) {
+      navigate(`/home/${saved}`, { replace: true })
+    }
+  }, [navigate])
 
   return (
     <Box
@@ -78,7 +102,7 @@ export default function UserPickerPage() {
               }}
             >
               <CardActionArea
-                onClick={() => navigate(`/home/${id}`)}
+                onClick={() => { setUserCookie(id); navigate(`/home/${id}`) }}
                 sx={{ borderRadius: '1rem' }}
               >
                 <CardContent sx={{ textAlign: 'center', py: 3 }}>
