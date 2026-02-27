@@ -34,7 +34,6 @@ public class TodosController(AppDbContext db) : ControllerBase
 
         var sorted = todos
             .OrderByDescending(t => t.Importance is null ? 0 : ImportanceOrder.GetValueOrDefault(t.Importance, 0))
-            .ThenBy(t => t.DueDate ?? DateTime.MaxValue)
             .ThenByDescending(t => t.CreatedAt);
 
         return Ok(sorted);
@@ -55,7 +54,6 @@ public class TodosController(AppDbContext db) : ControllerBase
         {
             Title        = request.Title.Trim(),
             Importance   = request.Importance,
-            DueDate      = request.DueDate,
             OwnerId      = owner,
             RequestedById = requester,
             CreatedAt    = DateTime.UtcNow,
@@ -115,7 +113,6 @@ public class TodosController(AppDbContext db) : ControllerBase
 public record CreateTodoRequest(
     string Title,
     string? Importance,
-    DateTime? DueDate,
     string OwnerId,
     string RequestedById
 );

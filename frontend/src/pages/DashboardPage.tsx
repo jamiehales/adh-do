@@ -294,11 +294,6 @@ export default function DashboardPage() {
                   <Typography variant="h6" fontWeight={700} lineHeight={1.3}>
                     {topTask.title}
                   </Typography>
-                  {topTask.dueDate && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                      Due {new Date(topTask.dueDate).toLocaleDateString()}
-                    </Typography>
-                  )}
                 </Box>
 
                 <Tooltip title="Mark as done">

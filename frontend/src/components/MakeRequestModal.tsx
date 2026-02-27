@@ -18,13 +18,11 @@ interface Props {
 export default function MakeRequestModal({ open, onClose, currentUser, otherUser, onCreated }: Props) {
   const [title, setTitle] = useState('')
   const [importance, setImportance] = useState('')
-  const [dueDate, setDueDate] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const handleClose = () => {
     setTitle('')
     setImportance('')
-    setDueDate('')
     onClose()
   }
 
@@ -35,7 +33,6 @@ export default function MakeRequestModal({ open, onClose, currentUser, otherUser
       await createTodo({
         title: title.trim(),
         importance: importance || null,
-        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
         ownerId: otherUser,
         requestedById: currentUser,
       })

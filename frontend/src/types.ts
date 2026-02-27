@@ -2,7 +2,6 @@ export interface Todo {
   id: number
   title: string
   importance: string | null
-  dueDate: string | null
   ownerId: string
   requestedById: string
   createdAt: string

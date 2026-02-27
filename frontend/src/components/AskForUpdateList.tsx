@@ -58,14 +58,9 @@ export default function AskForUpdateList({ todos, otherUser, loading, currentUse
                   }}
                 >
                   <CardContent sx={{ py: '0.875rem !important', px: '1.25rem !important' }}>
-                    <Typography variant="body1" fontWeight={600} mb={todo.dueDate ? 0.5 : 0}>
+                    <Typography variant="body1" fontWeight={600}>
                       {todo.title}
                     </Typography>
-                    {todo.dueDate && (
-                      <Typography variant="caption" color="text.secondary">
-                        Due {new Date(todo.dueDate).toLocaleDateString()}
-                      </Typography>
-                    )}
                   </CardContent>
                 </Card>
 

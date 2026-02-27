@@ -11,7 +11,6 @@ export async function getTodosForUser(userId: string): Promise<Todo[]> {
 export async function createTodo(data: {
   title: string
   importance: string | null
-  dueDate: string | null
   ownerId: string
   requestedById: string
 }): Promise<Todo> {

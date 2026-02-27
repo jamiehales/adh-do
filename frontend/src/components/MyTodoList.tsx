@@ -48,7 +48,7 @@ export default function MyTodoList({ todos, onCompleted }: Props) {
             <CardContent sx={{ py: '0.875rem !important', px: '1.25rem !important' }}>
               <Box display="flex" alignItems="flex-start" gap={1}>
                 <Box flex={1}>
-                  <Box display="flex" alignItems="center" gap={1} flexWrap="wrap" mb={todo.dueDate ? 0.5 : 0}>
+                  <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                     {todo.importance && (
                       <Chip
                         label={todo.importance}
@@ -66,11 +66,6 @@ export default function MyTodoList({ todos, onCompleted }: Props) {
                       {todo.title}
                     </Typography>
                   </Box>
-                  {todo.dueDate && (
-                    <Typography variant="caption" color="text.secondary">
-                      Due {new Date(todo.dueDate).toLocaleDateString()}
-                    </Typography>
-                  )}
                 </Box>
 
                 <Tooltip title="Mark as done">
