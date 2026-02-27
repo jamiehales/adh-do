@@ -6,6 +6,8 @@ export interface Todo {
   ownerId: string
   requestedById: string
   createdAt: string
+  completedAt: string | null
+  completionDismissed: boolean
 }
 
 export interface PendingUpdateRequest {

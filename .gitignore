@@ -19,3 +19,6 @@ dist/
 .env
 .env.local
 .env.production.local
+
+# DB
+backend/AdhDo.API/adh-do.db*

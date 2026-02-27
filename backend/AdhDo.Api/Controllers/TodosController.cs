@@ -29,7 +29,7 @@ public class TodosController(AppDbContext db) : ControllerBase
             return BadRequest("Invalid user.");
 
         var todos = await db.Todos
-            .Where(t => t.OwnerId == canonical)
+            .Where(t => t.OwnerId == canonical && t.CompletedAt == null)
             .ToListAsync();
 
         var sorted = todos
@@ -65,6 +65,50 @@ public class TodosController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync();
 
         return Created($"/api/todos/{todo.OwnerId}", todo);
+    }
+
+    // Mark a todo as complete
+    [HttpPost("{id}/complete")]
+    public async Task<IActionResult> Complete(int id)
+    {
+        var todo = await db.Todos.FindAsync(id);
+        if (todo is null) return NotFound();
+        if (todo.CompletedAt is not null) return Ok(todo);
+
+        todo.CompletedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return Ok(todo);
+    }
+
+    // Get completed todos that the requester hasn't been notified about yet
+    [HttpGet("completions-for/{userId}")]
+    public async Task<IActionResult> GetCompletionsFor(string userId)
+    {
+        var canonical = ValidUsers.FirstOrDefault(u =>
+            u.Equals(userId, StringComparison.OrdinalIgnoreCase));
+
+        if (canonical is null)
+            return BadRequest("Invalid user.");
+
+        var completions = await db.Todos
+            .Where(t => t.RequestedById == canonical && t.CompletedAt != null && !t.CompletionDismissed)
+            .ToListAsync();
+
+        return Ok(completions);
+    }
+
+    // Dismiss a completion notification
+    [HttpPost("{id}/dismiss-completion")]
+    public async Task<IActionResult> DismissCompletion(int id)
+    {
+        var todo = await db.Todos.FindAsync(id);
+        if (todo is null) return NotFound();
+
+        todo.CompletionDismissed = true;
+        await db.SaveChangesAsync();
+
+        return Ok();
     }
 }
 

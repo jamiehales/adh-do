@@ -54,6 +54,9 @@ using (var scope = app.Services.CreateScope())
             ""RespondedAt"" TEXT,
             ""ResponseDismissed"" INTEGER NOT NULL DEFAULT 0
         )");
+    // Add completion columns to Todos if they don't exist yet
+    try { db.Database.ExecuteSqlRaw(@"ALTER TABLE ""Todos"" ADD COLUMN ""CompletedAt"" TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw(@"ALTER TABLE ""Todos"" ADD COLUMN ""CompletionDismissed"" INTEGER NOT NULL DEFAULT 0"); } catch { }
 }
 
 app.UseAuthorization();

@@ -9,4 +9,6 @@ public class Todo
     public string OwnerId { get; set; } = string.Empty;
     public string RequestedById { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? CompletedAt { get; set; }
+    public bool CompletionDismissed { get; set; }
 }

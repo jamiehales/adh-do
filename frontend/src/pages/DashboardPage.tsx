@@ -2,19 +2,22 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   Box, Button, Card, CardContent, Chip,
-  CircularProgress, Stack, Tooltip, Typography,
+  CircularProgress, IconButton, Stack, Tooltip, Typography,
 } from '@mui/material'
-import { getTodosForUser } from '../api/todos'
+import { completeTodo, getCompletionsFor, getTodosForUser } from '../api/todos'
 import {
   getPendingUpdateRequests,
   getUpdateResponses,
   getOutgoingRequestedTodoIds,
 } from '../api/updateRequests'
 import type { PendingUpdateRequest, Todo, UpdateResponse, UserId } from '../types'
+import AppModal from '../components/AppModal'
 import MakeRequestModal from '../components/MakeRequestModal'
 import AskForUpdateList from '../components/AskForUpdateList'
 import RespondToUpdateModal from '../components/RespondToUpdateModal'
 import UpdateResponseModal from '../components/UpdateResponseModal'
+import MyTodoList from '../components/MyTodoList'
+import CompletionNotificationModal from '../components/CompletionNotificationModal'
 
 const OTHER_USER: Record<string, UserId> = {
   Jamie: 'Ellie',
@@ -40,15 +43,20 @@ export default function DashboardPage() {
   const [myTodos, setMyTodos] = useState<Todo[]>([])
   const [otherTodos, setOtherTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
+  const [completing, setCompleting] = useState<number | null>(null)
   const [showAskForUpdate, setShowAskForUpdate] = useState(false)
   const [showMakeRequest, setShowMakeRequest] = useState(false)
+  const [showMoreTasks, setShowMoreTasks] = useState(false)
 
-  // Update request state
+  // Update request / completion notification state
   const [pendingRequests, setPendingRequests] = useState<PendingUpdateRequest[]>([])
   const [pendingResponses, setPendingResponses] = useState<UpdateResponse[]>([])
+  const [completionNotifications, setCompletionNotifications] = useState<Todo[]>([])
   const [outgoingTodoIds, setOutgoingTodoIds] = useState<number[]>([])
+
   const [activeRequest, setActiveRequest] = useState<PendingUpdateRequest | null>(null)
   const [activeResponse, setActiveResponse] = useState<UpdateResponse | null>(null)
+  const [activeCompletion, setActiveCompletion] = useState<Todo | null>(null)
 
   const fetchTodos = useCallback(async () => {
     if (!userId || !otherUser) return
@@ -65,16 +73,18 @@ export default function DashboardPage() {
     }
   }, [userId, otherUser])
 
-  const fetchUpdateData = useCallback(async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!userId) return
     try {
-      const [pending, responses, outgoing] = await Promise.all([
+      const [pending, responses, completions, outgoing] = await Promise.all([
         getPendingUpdateRequests(userId),
         getUpdateResponses(userId),
+        getCompletionsFor(userId),
         getOutgoingRequestedTodoIds(userId),
       ])
       setPendingRequests(pending)
       setPendingResponses(responses)
+      setCompletionNotifications(completions)
       setOutgoingTodoIds(outgoing)
     } catch {
       // silently ignore polling errors
@@ -87,37 +97,39 @@ export default function DashboardPage() {
       return
     }
     fetchTodos()
-    fetchUpdateData()
-  }, [userId, otherUser, fetchTodos, fetchUpdateData, navigate])
+    fetchNotifications()
+  }, [userId, otherUser, fetchTodos, fetchNotifications, navigate])
 
   // Poll every 8 seconds
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
-    pollRef.current = setInterval(fetchUpdateData, 8000)
+    pollRef.current = setInterval(fetchNotifications, 8000)
     return () => {
       if (pollRef.current) clearInterval(pollRef.current)
     }
-  }, [fetchUpdateData])
+  }, [fetchNotifications])
 
   const topTask = myTodos[0] ?? null
+  const remainingTasks = myTodos.slice(1)
 
-  const handleBadgeClick = () => {
-    if (pendingRequests.length > 0) setActiveRequest(pendingRequests[0])
+  const handleCompleteTop = async () => {
+    if (!topTask) return
+    setCompleting(topTask.id)
+    try {
+      await completeTodo(topTask.id)
+      await fetchTodos()
+    } finally {
+      setCompleting(null)
+    }
   }
 
-  const handleResponseBubbleClick = () => {
-    if (pendingResponses.length > 0) setActiveResponse(pendingResponses[0])
+  // Badge slot positions (stack from bottom: 0 = lowest)
+  const slots = {
+    question: 0,
+    ellipsis: pendingRequests.length > 0 ? 1 : 0,
+    check: (pendingRequests.length > 0 ? 1 : 0) + (pendingResponses.length > 0 ? 1 : 0),
   }
-
-  const handleRequestResponded = () => {
-    setActiveRequest(null)
-    fetchUpdateData()
-  }
-
-  const handleResponseDismissed = () => {
-    setActiveResponse(null)
-    fetchUpdateData()
-  }
+  const badgeBottom = (slot: number) => 28 + slot * 64
 
   return (
     <Box
@@ -173,32 +185,55 @@ export default function DashboardPage() {
                 <CircularProgress size={24} sx={{ color: 'primary.light' }} />
               </Box>
             ) : topTask ? (
-              <Box>
-                {topTask.importance && (
-                  <Chip
-                    label={topTask.importance}
-                    size="small"
-                    sx={{
-                      mb: 1,
-                      bgcolor: 'rgba(124, 58, 237, 0.2)',
-                      color: 'primary.light',
-                      fontWeight: 600,
-                      fontSize: '0.68rem',
-                      height: 22,
-                    }}
-                  />
-                )}
-                <Typography variant="h6" fontWeight={700} lineHeight={1.3}>
-                  {topTask.title}
-                </Typography>
-                {topTask.dueDate && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Due {new Date(topTask.dueDate).toLocaleDateString()}
+              <Box display="flex" alignItems="center" gap={1.5}>
+                <Box flex={1}>
+                  {topTask.importance && (
+                    <Chip
+                      label={topTask.importance}
+                      size="small"
+                      sx={{
+                        mb: 1,
+                        bgcolor: 'rgba(124, 58, 237, 0.2)',
+                        color: 'primary.light',
+                        fontWeight: 600,
+                        fontSize: '0.68rem',
+                        height: 22,
+                      }}
+                    />
+                  )}
+                  <Typography variant="h6" fontWeight={700} lineHeight={1.3}>
+                    {topTask.title}
                   </Typography>
-                )}
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, display: 'block' }}>
-                  Requested by {topTask.requestedById}
-                </Typography>
+                  {topTask.dueDate && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      Due {new Date(topTask.dueDate).toLocaleDateString()}
+                    </Typography>
+                  )}
+                </Box>
+
+                <Tooltip title="Mark as done">
+                  <IconButton
+                    disabled={completing === topTask.id}
+                    onClick={handleCompleteTop}
+                    sx={{
+                      width: 38,
+                      height: 38,
+                      fontSize: '1.1rem',
+                      color: 'success.light',
+                      border: '1.5px solid',
+                      borderColor: 'rgba(74, 222, 128, 0.4)',
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      transition: 'all 0.2s',
+                      '&:hover:not(:disabled)': {
+                        bgcolor: 'rgba(74, 222, 128, 0.12)',
+                        borderColor: 'success.light',
+                      },
+                    }}
+                  >
+                    {completing === topTask.id ? '…' : '✓'}
+                  </IconButton>
+                </Tooltip>
               </Box>
             ) : (
               <Typography color="text.secondary" textAlign="center" sx={{ width: '100%' }}>
@@ -208,6 +243,21 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </Box>
+
+      {/* Remaining tasks */}
+      {remainingTasks.length > 0 && (
+        <Box sx={{ width: '100%', maxWidth: 480 }}>
+          <Button
+            variant="text"
+            size="small"
+            onClick={() => setShowMoreTasks(v => !v)}
+            sx={{ color: 'text.secondary', fontSize: '0.75rem', px: 0 }}
+          >
+            {showMoreTasks ? 'Show less' : `Show more`}
+          </Button>
+          {showMoreTasks && <MyTodoList todos={remainingTasks} onCompleted={fetchTodos} />}
+        </Box>
+      )}
 
       {/* Action buttons */}
       <Stack spacing={1.5} sx={{ width: '100%', maxWidth: 480 }}>
@@ -235,7 +285,7 @@ export default function DashboardPage() {
         <Button
           variant="outlined"
           fullWidth
-          onClick={() => setShowAskForUpdate(v => !v)}
+          onClick={() => setShowAskForUpdate(true)}
           sx={{
             borderRadius: '100px',
             py: 1.5,
@@ -249,20 +299,28 @@ export default function DashboardPage() {
             },
           }}
         >
-          {showAskForUpdate ? 'Hide Update' : 'Ask for an Update'}
+          Ask for an Update
         </Button>
       </Stack>
 
-      {/* Other user's todo list */}
-      {showAskForUpdate && otherUser && userId && (
-        <AskForUpdateList
-          todos={otherTodos}
-          otherUser={otherUser}
-          loading={loading}
-          currentUser={userId as UserId}
-          pendingRequestedTodoIds={outgoingTodoIds}
-          onRequestSent={fetchUpdateData}
-        />
+      {/* Ask for an update modal */}
+      {otherUser && userId && (
+        <AppModal
+          open={showAskForUpdate}
+          onClose={() => setShowAskForUpdate(false)}
+          title={<Typography variant="h6" fontWeight={700}>Ask for an update</Typography>}
+        >
+          <Box sx={{ pt: 1 }}>
+            <AskForUpdateList
+              todos={otherTodos}
+              otherUser={otherUser}
+              loading={loading}
+              currentUser={userId as UserId}
+              pendingRequestedTodoIds={outgoingTodoIds}
+              onRequestSent={fetchNotifications}
+            />
+          </Box>
+        </AppModal>
       )}
 
       {/* Make request modal */}
@@ -276,14 +334,14 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* ? badge — shown when this user has pending update requests to respond to */}
+      {/* ? badge — someone wants an update from me */}
       {pendingRequests.length > 0 && (
         <Tooltip title={`${pendingRequests.length} update request${pendingRequests.length > 1 ? 's' : ''} pending`}>
           <Box
-            onClick={handleBadgeClick}
+            onClick={() => setActiveRequest(pendingRequests[0])}
             sx={{
               position: 'fixed',
-              bottom: 28,
+              bottom: badgeBottom(slots.question),
               right: 28,
               width: 52,
               height: 52,
@@ -304,37 +362,22 @@ export default function DashboardPage() {
               ?
             </Typography>
             {pendingRequests.length > 1 && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -4,
-                  width: 18,
-                  height: 18,
-                  borderRadius: '50%',
-                  bgcolor: '#f43f5e',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Typography sx={{ fontSize: '0.65rem', color: '#fff', fontWeight: 700, lineHeight: 1 }}>
-                  {pendingRequests.length}
-                </Typography>
+              <Box sx={{ position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: '50%', bgcolor: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Typography sx={{ fontSize: '0.65rem', color: '#fff', fontWeight: 700, lineHeight: 1 }}>{pendingRequests.length}</Typography>
               </Box>
             )}
           </Box>
         </Tooltip>
       )}
 
-      {/* ... bubble — shown when this user has update responses to view */}
+      {/* ... bubble — I got an update response */}
       {pendingResponses.length > 0 && (
         <Tooltip title={`${pendingResponses.length} update${pendingResponses.length > 1 ? 's' : ''} received`}>
           <Box
-            onClick={handleResponseBubbleClick}
+            onClick={() => setActiveResponse(pendingResponses[0])}
             sx={{
               position: 'fixed',
-              bottom: pendingRequests.length > 0 ? 92 : 28,
+              bottom: badgeBottom(slots.ellipsis),
               right: 28,
               minWidth: 52,
               height: 52,
@@ -373,42 +416,76 @@ export default function DashboardPage() {
               />
             ))}
             {pendingResponses.length > 1 && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -4,
-                  width: 18,
-                  height: 18,
-                  borderRadius: '50%',
-                  bgcolor: '#f43f5e',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Typography sx={{ fontSize: '0.65rem', color: '#fff', fontWeight: 700, lineHeight: 1 }}>
-                  {pendingResponses.length}
-                </Typography>
+              <Box sx={{ position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: '50%', bgcolor: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Typography sx={{ fontSize: '0.65rem', color: '#fff', fontWeight: 700, lineHeight: 1 }}>{pendingResponses.length}</Typography>
               </Box>
             )}
           </Box>
         </Tooltip>
       )}
 
-      {/* Respond to update request modal */}
+      {/* ✓ badge — a task I requested was completed */}
+      {completionNotifications.length > 0 && (
+        <Tooltip title={`${completionNotifications.length} task${completionNotifications.length > 1 ? 's' : ''} completed`}>
+          <Box
+            onClick={() => setActiveCompletion(completionNotifications[0])}
+            sx={{
+              position: 'fixed',
+              bottom: badgeBottom(slots.check),
+              right: 28,
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              bgcolor: 'rgba(74, 222, 128, 0.15)',
+              border: '2px solid rgba(74, 222, 128, 0.5)',
+              boxShadow: '0 4px 20px rgba(74, 222, 128, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              userSelect: 'none',
+              animation: 'buzz 0.6s ease-in-out infinite',
+              animationDelay: '0.3s',
+              ...buzzKeyframes,
+              '&:hover': { bgcolor: 'rgba(74, 222, 128, 0.22)' },
+            }}
+          >
+            <Typography sx={{ fontSize: '1.3rem', lineHeight: 1, color: '#4ade80' }}>
+              ✓
+            </Typography>
+            {completionNotifications.length > 1 && (
+              <Box sx={{ position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: '50%', bgcolor: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Typography sx={{ fontSize: '0.65rem', color: '#fff', fontWeight: 700, lineHeight: 1 }}>{completionNotifications.length}</Typography>
+              </Box>
+            )}
+          </Box>
+        </Tooltip>
+      )}
+
+      {/* Respond to update request */}
       {activeRequest && (
         <RespondToUpdateModal
           request={activeRequest}
-          onDone={handleRequestResponded}
+          onDone={() => { setActiveRequest(null); fetchNotifications() }}
+          onClose={() => setActiveRequest(null)}
         />
       )}
 
-      {/* View update response modal */}
+      {/* View update response */}
       {activeResponse && (
         <UpdateResponseModal
           response={activeResponse}
-          onDismissed={handleResponseDismissed}
+          onDismissed={() => { setActiveResponse(null); fetchNotifications() }}
+          onClose={() => setActiveResponse(null)}
+        />
+      )}
+
+      {/* View completion notification */}
+      {activeCompletion && (
+        <CompletionNotificationModal
+          todo={activeCompletion}
+          onDismissed={() => { setActiveCompletion(null); fetchNotifications() }}
+          onClose={() => setActiveCompletion(null)}
         />
       )}
     </Box>

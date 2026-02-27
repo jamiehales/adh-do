@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import {
-  Box, Button, Dialog, DialogContent, DialogTitle,
-  FormControlLabel, Radio, RadioGroup, TextField, Typography,
+  Box, Button, FormControlLabel, Radio, RadioGroup, TextField, Typography,
 } from '@mui/material'
 import { createTodo } from '../api/todos'
 import { IMPORTANCE_LEVELS } from '../types'
 import type { UserId } from '../types'
+import AppModal from './AppModal'
 
 interface Props {
   open: boolean
@@ -56,103 +56,81 @@ export default function MakeRequestModal({ open, onClose, currentUser, otherUser
   }
 
   return (
-    <Dialog
+    <AppModal
       open={open}
       onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          bgcolor: 'background.paper',
-          border: '1px solid rgba(167, 139, 250, 0.2)',
-          borderRadius: '1.25rem',
-        },
-      }}
+      title={<Typography variant="h6" fontWeight={700}>Make a request of {otherUser}</Typography>}
     >
-      <DialogTitle sx={{ pb: 0 }}>
-        <Typography variant="h6" fontWeight={700}>
-          Make a request of {otherUser}
-        </Typography>
-      </DialogTitle>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
 
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+        {/* Title */}
+        <TextField
+          label="What do you need?"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          fullWidth
+          autoFocus
+          required
+          sx={fieldSx}
+        />
 
-          {/* Title */}
-          <TextField
-            label="What do you need?"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            fullWidth
-            autoFocus
-            required
-            sx={fieldSx}
-          />
-
-          {/* Importance */}
-          <Box>
-            <Typography variant="body2" color="text.secondary" mb={0.75} fontWeight={600}>
-              How important is this?
-            </Typography>
-            <RadioGroup value={importance} onChange={e => setImportance(e.target.value)}>
+        {/* Importance */}
+        <Box>
+          <Typography variant="body2" color="text.secondary" mb={0.75} fontWeight={600}>
+            How important is this?
+          </Typography>
+          <RadioGroup value={importance} onChange={e => setImportance(e.target.value)}>
+            <FormControlLabel
+              value=""
+              control={<Radio size="small" />}
+              label={<Typography variant="body2" color="text.secondary">Just a thought (default)</Typography>}
+            />
+            {IMPORTANCE_LEVELS.map(level => (
               <FormControlLabel
-                value=""
+                key={level}
+                value={level}
                 control={<Radio size="small" />}
-                label={<Typography variant="body2" color="text.secondary">Just a thought (default)</Typography>}
+                label={<Typography variant="body2">{level}</Typography>}
               />
-              {IMPORTANCE_LEVELS.map(level => (
-                <FormControlLabel
-                  key={level}
-                  value={level}
-                  control={<Radio size="small" />}
-                  label={<Typography variant="body2">{level}</Typography>}
-                />
-              ))}
-            </RadioGroup>
-          </Box>
-
-          {/* Due date */}
-          <TextField
-            label="Due date (optional)"
-            type="date"
-            value={dueDate}
-            onChange={e => setDueDate(e.target.value)}
-            fullWidth
-            slotProps={{ inputLabel: { shrink: true } }}
-            sx={fieldSx}
-          />
-
-          {/* Actions */}
-          <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>
-            <Button
-              onClick={handleClose}
-              sx={{ borderRadius: '100px', color: 'text.secondary' }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={!title.trim() || submitting}
-              sx={{
-                borderRadius: '100px',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
-                  opacity: 0.92,
-                },
-                '&.Mui-disabled': {
-                  background: 'rgba(124, 58, 237, 0.3)',
-                  color: 'rgba(255,255,255,0.4)',
-                },
-              }}
-            >
-              {submitting ? 'Sending…' : 'Send Request'}
-            </Button>
-          </Box>
+            ))}
+          </RadioGroup>
         </Box>
-      </DialogContent>
-    </Dialog>
+
+        {/* Due date */}
+        <TextField
+          label="Due date (optional)"
+          type="date"
+          value={dueDate}
+          onChange={e => setDueDate(e.target.value)}
+          fullWidth
+          slotProps={{ inputLabel: { shrink: true } }}
+          sx={fieldSx}
+        />
+
+        {/* Actions */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={!title.trim() || submitting}
+            sx={{
+              borderRadius: '100px',
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
+                opacity: 0.92,
+              },
+              '&.Mui-disabled': {
+                background: 'rgba(124, 58, 237, 0.3)',
+                color: 'rgba(255,255,255,0.4)',
+              },
+            }}
+          >
+            {submitting ? 'Sending…' : 'Send Request'}
+          </Button>
+        </Box>
+      </Box>
+    </AppModal>
   )
 }

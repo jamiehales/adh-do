@@ -23,3 +23,20 @@ export async function createTodo(data: {
   if (!res.ok) throw new Error('Failed to create todo')
   return res.json()
 }
+
+export async function completeTodo(id: number): Promise<Todo> {
+  const res = await fetch(`${BASE}/${id}/complete`, { method: 'POST' })
+  if (!res.ok) throw new Error('Failed to complete todo')
+  return res.json()
+}
+
+export async function getCompletionsFor(userId: string): Promise<Todo[]> {
+  const res = await fetch(`${BASE}/completions-for/${userId}`)
+  if (!res.ok) throw new Error('Failed to fetch completions')
+  return res.json()
+}
+
+export async function dismissCompletion(id: number): Promise<void> {
+  const res = await fetch(`${BASE}/${id}/dismiss-completion`, { method: 'POST' })
+  if (!res.ok) throw new Error('Failed to dismiss completion')
+}
