@@ -1,0 +1,54 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: ASP.NET Core",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-backend",
+      "program": "${workspaceFolder}/backend/AdhDo.Api/bin/Debug/net9.0/AdhDo.Api.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/backend/AdhDo.Api",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "console": "internalConsole"
+    },
+    {
+      "name": "Frontend: Vite Dev Server",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["dev"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "Frontend: Attach Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/frontend/src",
+      "sourceMapPathOverrides": {
+        "/@fs/*": "${workspaceFolder}/*",
+        "/src/*": "${workspaceFolder}/frontend/src/*"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack",
+      "configurations": [
+        "Backend: ASP.NET Core",
+        "Frontend: Vite Dev Server"
+      ],
+      "stopAll": true
+    }
+  ]
+}

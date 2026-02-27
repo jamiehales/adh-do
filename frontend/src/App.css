@@ -1,0 +1,144 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --primary: #7c3aed;
+  --primary-light: #a78bfa;
+  --accent: #ec4899;
+  --bg: #0d0720;
+  --surface: #160d2e;
+  --text: #f1f0f8;
+  --text-muted: #8b83b0;
+  --border: rgba(167, 139, 250, 0.2);
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  gap: 3.5rem;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(124, 58, 237, 0.15) 0%,
+    transparent 70%
+  );
+}
+
+/* Hero */
+
+.hero {
+  text-align: center;
+  max-width: 560px;
+}
+
+.logo {
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 1.25rem;
+}
+
+.logo-adh   { color: var(--primary-light); }
+.logo-dash  { color: var(--text-muted); }
+.logo-do    { color: var(--text); }
+.logo-check { color: var(--accent); }
+
+.tagline {
+  font-size: 1.125rem;
+  color: var(--text-muted);
+  line-height: 1.75;
+}
+
+.tagline strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Feature cards */
+
+.features {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 720px;
+  width: 100%;
+}
+
+.feature-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1.75rem 1.5rem;
+  flex: 1 1 180px;
+  max-width: 220px;
+  text-align: center;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(167, 139, 250, 0.5);
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.2);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 0.875rem;
+}
+
+.feature-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.375rem;
+}
+
+.feature-card p {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* CTA */
+
+.cta-button {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: #fff;
+  border: none;
+  padding: 0.875rem 2.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+  letter-spacing: 0.01em;
+}
+
+.cta-button:hover {
+  opacity: 0.92;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(124, 58, 237, 0.5);
+}
+
+.cta-button:active {
+  transform: translateY(0);
+}

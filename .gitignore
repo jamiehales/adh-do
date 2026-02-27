@@ -1,0 +1,21 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.nupkg
+
+# Node / Yarn
+node_modules/
+dist/
+.yarn/cache
+.pnp.*
+
+# VS Code user settings (keep shared config, ignore personal)
+.vscode/settings.json
+
+# Environment
+.env
+.env.local
+.env.production.local
