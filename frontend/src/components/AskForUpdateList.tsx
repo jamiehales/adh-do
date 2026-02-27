@@ -1,7 +1,16 @@
 import { useState } from 'react'
 import { Box, Card, CardContent, CircularProgress, IconButton, Stack, Tooltip, Typography } from '@mui/material'
-import type { Todo, UserId } from '../types'
+import type { Todo, TodoLastUpdate, UserId } from '../types'
 import { requestUpdate } from '../api/updateRequests'
+
+function fuzzyTime(dateStr: string): string {
+  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
+  if (seconds < 60) return 'just now'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`
+  return new Date(dateStr).toLocaleDateString()
+}
 
 interface Props {
   todos: Todo[]
@@ -9,10 +18,11 @@ interface Props {
   loading: boolean
   currentUser: UserId
   pendingRequestedTodoIds: number[]
+  lastUpdates: TodoLastUpdate[]
   onRequestSent: () => void
 }
 
-export default function AskForUpdateList({ todos, otherUser, loading, currentUser, pendingRequestedTodoIds, onRequestSent }: Props) {
+export default function AskForUpdateList({ todos, otherUser, loading, currentUser, pendingRequestedTodoIds, lastUpdates, onRequestSent }: Props) {
   const [requesting, setRequesting] = useState<number | null>(null)
 
   const handleRequest = async (todoId: number) => {
@@ -40,6 +50,7 @@ export default function AskForUpdateList({ todos, otherUser, loading, currentUse
           todos.map(todo => {
             const isPending = pendingRequestedTodoIds.includes(todo.id)
             const isRequesting = requesting === todo.id
+            const lastUpdate = lastUpdates.find(u => u.todoId === todo.id)
 
             return (
               <Stack key={todo.id} direction="row" alignItems="center" spacing={1}>
@@ -61,6 +72,22 @@ export default function AskForUpdateList({ todos, otherUser, loading, currentUse
                     <Typography variant="body1" fontWeight={600}>
                       {todo.title}
                     </Typography>
+                    {lastUpdate && (
+                      <Typography
+                        variant="body2"
+                        sx={{ mt: 0.75, color: 'text.secondary', fontSize: '0.78rem', lineHeight: 1.4 }}
+                      >
+                        <Box component="span" sx={{ color: 'primary.light', fontWeight: 600 }}>
+                          {lastUpdate.ownerId}
+                        </Box>
+                        {' said '}
+                        <Box component="span" sx={{ color: 'text.primary' }}>
+                          {lastUpdate.response}
+                        </Box>
+                        {' · '}
+                        {fuzzyTime(lastUpdate.respondedAt)}
+                      </Typography>
+                    )}
                   </CardContent>
                 </Card>
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A collaborative task management web app for two specific users (Jamie and Ellie) with ADHD. Users can create tasks for each other, request status updates, and receive completion notifications.
+A collaborative task management web app for two specific users (Jamie and Ellie) with ADHD. Users can create tasks for each other, request status updates, volunteer updates proactively, and receive completion notifications.
 
 ## Development Commands
 
@@ -44,17 +44,22 @@ No test or lint commands are currently configured.
 
 **Two data models:**
 - `Todo` — a task with owner, requester, importance level, and optional completion/dismissal state
-- `UpdateRequest` — a request for a status update on a todo, with optional response
+- `UpdateRequest` — a request for a status update on a todo, with optional response. Also used for volunteered (unsolicited) updates: these are created with `Response` pre-filled and `RequestedByUserId` set to the todo's `RequestedById`.
 
 **Importance levels** control sort order in `GET /api/todos/{userId}`.
 
 **Notification flow:** Completion notifications (`/api/todos/completions-for/{userId}`) and update response notifications (`/api/update-requests/responses-for/{userId}`) are shown as modals and must be explicitly dismissed.
 
+**Update flow:**
+- Requested update: other user taps `?` on a todo → owner sees a `?` badge → responds via modal → requester sees `...` badge with the response
+- Volunteered update: owner taps `💬` on their own task → submits message → stored as a pre-responded `UpdateRequest` → requester sees same `...` badge
+- The "Ask for an update" list shows the most recent update message per todo (from `GET /api/update-requests/updates-for-todos/{userId}`) beneath the task title with fuzzy relative time
+
 ## Frontend Structure
 
 - `src/api/` — all API fetch calls
 - `src/pages/` — `UserPickerPage` (entry), `DashboardPage` (main app)
-- `src/components/` — modal and list components
+- `src/components/` — modal and list components (`VolunteerUpdateModal` for proactive updates, `RespondToUpdateModal` for responding to requests, `AskForUpdateList` for the update request modal)
 - `src/types.ts` — shared TypeScript types
 - `src/theme.ts` — MUI dark theme (purple/pink palette)
 

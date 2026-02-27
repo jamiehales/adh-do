@@ -25,6 +25,13 @@ export interface UpdateResponse {
   respondedAt: string
 }
 
+export interface TodoLastUpdate {
+  todoId: number
+  ownerId: string
+  response: string
+  respondedAt: string
+}
+
 export type UserId = 'Jamie' | 'Ellie'
 
 export const IMPORTANCE_LEVELS = [

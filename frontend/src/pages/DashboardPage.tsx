@@ -9,8 +9,9 @@ import {
   getPendingUpdateRequests,
   getUpdateResponses,
   getOutgoingRequestedTodoIds,
+  getLastUpdatesForTodos,
 } from '../api/updateRequests'
-import type { PendingUpdateRequest, Todo, UpdateResponse, UserId } from '../types'
+import type { PendingUpdateRequest, Todo, TodoLastUpdate, UpdateResponse, UserId } from '../types'
 import AppModal from '../components/AppModal'
 import MakeRequestModal from '../components/MakeRequestModal'
 import AskForUpdateList from '../components/AskForUpdateList'
@@ -18,6 +19,7 @@ import RespondToUpdateModal from '../components/RespondToUpdateModal'
 import UpdateResponseModal from '../components/UpdateResponseModal'
 import MyTodoList from '../components/MyTodoList'
 import CompletionNotificationModal from '../components/CompletionNotificationModal'
+import VolunteerUpdateModal from '../components/VolunteerUpdateModal'
 
 const OTHER_USER: Record<string, UserId> = {
   Jamie: 'Ellie',
@@ -58,10 +60,12 @@ export default function DashboardPage() {
   const [pendingResponses, setPendingResponses] = useState<UpdateResponse[]>([])
   const [completionNotifications, setCompletionNotifications] = useState<Todo[]>([])
   const [outgoingTodoIds, setOutgoingTodoIds] = useState<number[]>([])
+  const [lastUpdates, setLastUpdates] = useState<TodoLastUpdate[]>([])
 
   const [activeRequest, setActiveRequest] = useState<PendingUpdateRequest | null>(null)
   const [activeResponse, setActiveResponse] = useState<UpdateResponse | null>(null)
   const [activeCompletion, setActiveCompletion] = useState<Todo | null>(null)
+  const [volunteeringFor, setVolunteeringFor] = useState<Todo | null>(null)
 
   const fetchTodos = useCallback(async () => {
     if (!userId || !otherUser) return
@@ -81,16 +85,18 @@ export default function DashboardPage() {
   const fetchNotifications = useCallback(async () => {
     if (!userId) return
     try {
-      const [pending, responses, completions, outgoing] = await Promise.all([
+      const [pending, responses, completions, outgoing, lastUpd] = await Promise.all([
         getPendingUpdateRequests(userId),
         getUpdateResponses(userId),
         getCompletionsFor(userId),
         getOutgoingRequestedTodoIds(userId),
+        getLastUpdatesForTodos(userId),
       ])
       setPendingRequests(pending)
       setPendingResponses(responses)
       setCompletionNotifications(completions)
       setOutgoingTodoIds(outgoing)
+      setLastUpdates(lastUpd)
     } catch {
       // silently ignore polling errors
     }
@@ -296,6 +302,29 @@ export default function DashboardPage() {
                   </Typography>
                 </Box>
 
+                <Tooltip title="Send an update">
+                  <IconButton
+                    onClick={() => setVolunteeringFor(topTask)}
+                    sx={{
+                      width: 38,
+                      height: 38,
+                      fontSize: '1rem',
+                      color: 'primary.light',
+                      border: '1.5px solid',
+                      borderColor: 'rgba(167, 139, 250, 0.3)',
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        bgcolor: 'rgba(124, 58, 237, 0.1)',
+                        borderColor: 'primary.light',
+                      },
+                    }}
+                  >
+                    💬
+                  </IconButton>
+                </Tooltip>
+
                 <Tooltip title="Mark as done">
                   <IconButton
                     disabled={completing === topTask.id}
@@ -341,7 +370,7 @@ export default function DashboardPage() {
           >
             {showMoreTasks ? 'Show less' : `Show more`}
           </Button>
-          {showMoreTasks && <MyTodoList todos={remainingTasks} onCompleted={fetchTodos} />}
+          {showMoreTasks && <MyTodoList todos={remainingTasks} onCompleted={fetchTodos} onVolunteerUpdate={setVolunteeringFor} />}
         </Box>
       )}
 
@@ -402,6 +431,7 @@ export default function DashboardPage() {
               loading={loading}
               currentUser={userId as UserId}
               pendingRequestedTodoIds={outgoingTodoIds}
+              lastUpdates={lastUpdates}
               onRequestSent={fetchNotifications}
             />
           </Box>
@@ -481,6 +511,16 @@ export default function DashboardPage() {
           todo={activeCompletion}
           onDismissed={() => { setActiveCompletion(null); fetchNotifications() }}
           onClose={() => setActiveCompletion(null)}
+        />
+      )}
+
+      {/* Volunteer an update */}
+      {volunteeringFor && userId && (
+        <VolunteerUpdateModal
+          todo={volunteeringFor}
+          userId={userId}
+          onDone={() => setVolunteeringFor(null)}
+          onClose={() => setVolunteeringFor(null)}
         />
       )}
     </Box>

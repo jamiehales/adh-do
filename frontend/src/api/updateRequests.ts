@@ -1,4 +1,4 @@
-import type { PendingUpdateRequest, UpdateResponse } from '../types'
+import type { PendingUpdateRequest, TodoLastUpdate, UpdateResponse } from '../types'
 
 const BASE = '/api/update-requests'
 
@@ -41,4 +41,19 @@ export async function respondToUpdateRequest(id: number, response: string): Prom
 export async function dismissUpdateResponse(id: number): Promise<void> {
   const res = await fetch(`${BASE}/${id}/dismiss`, { method: 'POST' })
   if (!res.ok) throw new Error('Failed to dismiss response')
+}
+
+export async function getLastUpdatesForTodos(userId: string): Promise<TodoLastUpdate[]> {
+  const res = await fetch(`${BASE}/updates-for-todos/${userId}`)
+  if (!res.ok) throw new Error('Failed to fetch last updates')
+  return res.json()
+}
+
+export async function volunteerUpdate(todoId: number, ownerUserId: string, message: string): Promise<void> {
+  const res = await fetch(`${BASE}/volunteer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ todoId, ownerUserId, message }),
+  })
+  if (!res.ok) throw new Error('Failed to send update')
 }

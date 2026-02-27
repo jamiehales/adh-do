@@ -6,9 +6,10 @@ import { completeTodo } from '../api/todos'
 interface Props {
   todos: Todo[]
   onCompleted: () => void
+  onVolunteerUpdate: (todo: Todo) => void
 }
 
-export default function MyTodoList({ todos, onCompleted }: Props) {
+export default function MyTodoList({ todos, onCompleted, onVolunteerUpdate }: Props) {
   const [completing, setCompleting] = useState<number | null>(null)
 
   if (todos.length === 0) return null
@@ -67,6 +68,30 @@ export default function MyTodoList({ todos, onCompleted }: Props) {
                     </Typography>
                   </Box>
                 </Box>
+
+                <Tooltip title="Send an update">
+                  <IconButton
+                    size="small"
+                    onClick={() => onVolunteerUpdate(todo)}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      fontSize: '0.85rem',
+                      color: 'primary.light',
+                      border: '1.5px solid',
+                      borderColor: 'rgba(167, 139, 250, 0.3)',
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        bgcolor: 'rgba(124, 58, 237, 0.1)',
+                        borderColor: 'primary.light',
+                      },
+                    }}
+                  >
+                    💬
+                  </IconButton>
+                </Tooltip>
 
                 <Tooltip title="Mark as done">
                   <IconButton
