@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, Card, CardContent, Chip, IconButton, Tooltip, Typography } from '@mui/material'
+import { Box, Card, CardContent, IconButton, Tooltip, Typography } from '@mui/material'
 import type { Todo } from '../types'
 import { completeTodo } from '../api/todos'
 
@@ -47,26 +47,27 @@ export default function MyTodoList({ todos, onCompleted, onVolunteerUpdate }: Pr
             }}
           >
             <CardContent sx={{ py: '0.875rem !important', px: '1.25rem !important' }}>
+              {todo.importance && (
+                <Typography
+                  variant="overline"
+                  sx={{
+                    display: 'block',
+                    textAlign: 'center',
+                    color: 'primary.light',
+                    fontWeight: 700,
+                    fontSize: '0.7rem',
+                    letterSpacing: '0.08em',
+                    mb: 1,
+                  }}
+                >
+                  {todo.importance}
+                </Typography>
+              )}
               <Box display="flex" alignItems="flex-start" gap={1}>
                 <Box flex={1}>
-                  <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                    {todo.importance && (
-                      <Chip
-                        label={todo.importance}
-                        size="small"
-                        sx={{
-                          bgcolor: 'rgba(124, 58, 237, 0.2)',
-                          color: 'primary.light',
-                          fontWeight: 600,
-                          fontSize: '0.65rem',
-                          height: 20,
-                        }}
-                      />
-                    )}
-                    <Typography variant="body1" fontWeight={600}>
-                      {todo.title}
-                    </Typography>
-                  </Box>
+                  <Typography variant="body1" fontWeight={600}>
+                    {todo.title}
+                  </Typography>
                 </Box>
 
                 <Tooltip title="Send an update">
