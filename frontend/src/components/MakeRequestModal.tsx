@@ -96,17 +96,6 @@ export default function MakeRequestModal({ open, onClose, currentUser, otherUser
           </RadioGroup>
         </Box>
 
-        {/* Due date */}
-        <TextField
-          label="Due date (optional)"
-          type="date"
-          value={dueDate}
-          onChange={e => setDueDate(e.target.value)}
-          fullWidth
-          slotProps={{ inputLabel: { shrink: true } }}
-          sx={fieldSx}
-        />
-
         {/* Actions */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button

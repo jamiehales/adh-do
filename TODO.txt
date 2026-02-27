@@ -1,0 +1,9 @@
+* Remove all due date functionality
+* Remove how important is this, and ask where it should be placed in the list of tasks
+* Allow volunteering an update without it being requested - add a button next to the checkmark on a task
+* When there's a "I need this to happen" that hasn't had an update in a week, shake the volunteer an update icon (using the same animation as the other notification icons)
+* Make the importance of the task centered horizontally at the top of the card, as a header not a chip
+* Remove the drop shadow glow from around things
+* Remove the emojis
+* Allow re-ordering of importance
+* Investigate push notifications of some sort

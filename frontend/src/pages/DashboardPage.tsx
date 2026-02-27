@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  Box, Button, Card, CardContent, Chip,
+  Box, Button, Card, CardContent,
   CircularProgress, IconButton, Stack, Tooltip, Typography,
 } from '@mui/material'
 import { completeTodo, getCompletionsFor, getTodosForUser } from '../api/todos'
@@ -26,11 +26,16 @@ const OTHER_USER: Record<string, UserId> = {
 
 const buzzKeyframes = {
   '@keyframes buzz': {
-    '0%, 100%': { transform: 'rotate(0deg) scale(1)' },
-    '20%': { transform: 'rotate(-8deg) scale(1.05)' },
-    '40%': { transform: 'rotate(8deg) scale(1.05)' },
-    '60%': { transform: 'rotate(-5deg) scale(1.02)' },
-    '80%': { transform: 'rotate(5deg) scale(1.02)' },
+    '0%, 22%, 100%': { transform: 'rotate(0deg) scale(1)' },
+    '5%': { transform: 'rotate(-8deg) scale(1.05)' },
+    '10%': { transform: 'rotate(8deg) scale(1.05)' },
+    '15%': { transform: 'rotate(-5deg) scale(1.02)' },
+    '20%': { transform: 'rotate(0deg) scale(1)' },
+    '55%': { transform: 'rotate(0deg) scale(1)' },
+    '60%': { transform: 'rotate(-8deg) scale(1.05)' },
+    '65%': { transform: 'rotate(8deg) scale(1.05)' },
+    '70%': { transform: 'rotate(-5deg) scale(1.02)' },
+    '75%': { transform: 'rotate(0deg) scale(1)' },
   },
 }
 
@@ -123,13 +128,6 @@ export default function DashboardPage() {
     }
   }
 
-  // Badge slot positions (stack from bottom: 0 = lowest)
-  const slots = {
-    question: 0,
-    ellipsis: pendingRequests.length > 0 ? 1 : 0,
-    check: (pendingRequests.length > 0 ? 1 : 0) + (pendingResponses.length > 0 ? 1 : 0),
-  }
-  const badgeBottom = (slot: number) => 28 + slot * 64
 
   return (
     <Box
@@ -155,28 +153,117 @@ export default function DashboardPage() {
         <Typography variant="h5" fontWeight={700}>
           Hi, {userId} 👋
         </Typography>
+
+        <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* ? badge — someone wants an update from me */}
+          {pendingRequests.length > 0 && (
+            <Tooltip title={`${pendingRequests.length} update request${pendingRequests.length > 1 ? 's' : ''} pending`}>
+              <Box
+                onClick={() => setActiveRequest(pendingRequests[0])}
+                sx={{
+                  position: 'relative',
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
+                  boxShadow: '0 2px 12px rgba(124, 58, 237, 0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  animation: 'buzz 2.5s ease-in-out infinite',
+                  ...buzzKeyframes,
+                  '&:hover': { opacity: 0.9 },
+                }}
+              >
+                <Typography sx={{ fontSize: '1.1rem', lineHeight: 1, color: '#fff', fontWeight: 700 }}>
+                  ?
+                </Typography>
+                {pendingRequests.length > 1 && (
+                  <Box sx={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', bgcolor: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography sx={{ fontSize: '0.6rem', color: '#fff', fontWeight: 700, lineHeight: 1 }}>{pendingRequests.length}</Typography>
+                  </Box>
+                )}
+              </Box>
+            </Tooltip>
+          )}
+
+          {/* ... bubble — I got an update response */}
+          {pendingResponses.length > 0 && (
+            <Tooltip title={`${pendingResponses.length} update${pendingResponses.length > 1 ? 's' : ''} received`}>
+              <Box
+                onClick={() => setActiveResponse(pendingResponses[0])}
+                sx={{
+                  position: 'relative',
+                  minWidth: 36,
+                  height: 36,
+                  px: 1,
+                  borderRadius: '18px',
+                  bgcolor: 'background.paper',
+                  border: '2px solid rgba(167, 139, 250, 0.5)',
+                  boxShadow: '0 2px 12px rgba(124, 58, 237, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '3px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  animation: 'buzz 2.5s ease-in-out infinite',
+                  animationDelay: '0.15s',
+                  ...buzzKeyframes,
+                  '&:hover': { borderColor: 'primary.light' },
+                }}
+              >
+                {[0, 1, 2].map(i => (
+                  <Box
+                    key={i}
+                    sx={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      bgcolor: 'primary.light',
+                      animation: 'dotBounce 1s ease-in-out infinite',
+                      animationDelay: `${i * 0.15}s`,
+                      '@keyframes dotBounce': {
+                        '0%, 80%, 100%': { transform: 'scale(0.8)', opacity: 0.5 },
+                        '40%': { transform: 'scale(1.2)', opacity: 1 },
+                      },
+                    }}
+                  />
+                ))}
+                {pendingResponses.length > 1 && (
+                  <Box sx={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', bgcolor: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography sx={{ fontSize: '0.6rem', color: '#fff', fontWeight: 700, lineHeight: 1 }}>{pendingResponses.length}</Typography>
+                  </Box>
+                )}
+              </Box>
+            </Tooltip>
+          )}
+        </Box>
       </Box>
 
-      {/* "What's wanted from you most" card */}
       <Box sx={{ width: '100%', maxWidth: 480 }}>
         <Typography
           variant="overline"
           color="text.secondary"
-          sx={{ letterSpacing: '0.08em', fontSize: '0.7rem' }}
+          sx={{ letterSpacing: '0.08em', fontSize: '0.7rem', display: 'block', textAlign: 'center' }}
         >
-          What is wanted from you the most
+          What would help your {otherUser} the most
         </Typography>
 
         <Card
           elevation={0}
           sx={{
             mt: 1,
-            bgcolor: 'background.paper',
-            border: '1px solid rgba(167, 139, 250, 0.2)',
+            background: 'linear-gradient(160deg, rgba(124,58,237,0.07) 0%, rgba(236,72,153,0.04) 100%)',
+            border: '1px solid rgba(167, 139, 250, 0.4)',
+            borderTop: '2px solid rgba(167, 139, 250, 0.6)',
             borderRadius: '1rem',
             minHeight: 110,
             display: 'flex',
             alignItems: 'center',
+            boxShadow: '0 0 0 3px rgba(124,58,237,0.06), 0 4px 20px rgba(124,58,237,0.1)',
           }}
         >
           <CardContent sx={{ width: '100%', p: '1.5rem !important' }}>
@@ -185,22 +272,25 @@ export default function DashboardPage() {
                 <CircularProgress size={24} sx={{ color: 'primary.light' }} />
               </Box>
             ) : topTask ? (
-              <Box display="flex" alignItems="center" gap={1.5}>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                {topTask.importance && (
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      display: 'block',
+                      textAlign: 'center',
+                      color: 'primary.light',
+                      fontWeight: 700,
+                      fontSize: '0.7rem',
+                      letterSpacing: '0.08em',
+                      mb: 1.25,
+                    }}
+                  >
+                    {topTask.importance}
+                  </Typography>
+                )}
+                <Box display="flex" alignItems="center" gap={1.5}>
                 <Box flex={1}>
-                  {topTask.importance && (
-                    <Chip
-                      label={topTask.importance}
-                      size="small"
-                      sx={{
-                        mb: 1,
-                        bgcolor: 'rgba(124, 58, 237, 0.2)',
-                        color: 'primary.light',
-                        fontWeight: 600,
-                        fontSize: '0.68rem',
-                        height: 22,
-                      }}
-                    />
-                  )}
                   <Typography variant="h6" fontWeight={700} lineHeight={1.3}>
                     {topTask.title}
                   </Typography>
@@ -234,6 +324,7 @@ export default function DashboardPage() {
                     {completing === topTask.id ? '…' : '✓'}
                   </IconButton>
                 </Tooltip>
+                </Box>
               </Box>
             ) : (
               <Typography color="text.secondary" textAlign="center" sx={{ width: '100%' }}>
@@ -262,20 +353,19 @@ export default function DashboardPage() {
       {/* Action buttons */}
       <Stack spacing={1.5} sx={{ width: '100%', maxWidth: 480 }}>
         <Button
-          variant="contained"
+          variant="outlined"
           fullWidth
           onClick={() => setShowMakeRequest(true)}
           sx={{
-            background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
             borderRadius: '100px',
             py: 1.5,
             fontWeight: 700,
             fontSize: '1rem',
-            boxShadow: '0 4px 20px rgba(124, 58, 237, 0.4)',
+            borderColor: 'rgba(167, 139, 250, 0.4)',
+            color: 'primary.light',
             '&:hover': {
-              background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
-              opacity: 0.92,
-              boxShadow: '0 8px 28px rgba(124, 58, 237, 0.5)',
+              borderColor: 'primary.light',
+              bgcolor: 'rgba(124, 58, 237, 0.08)',
             },
           }}
         >
@@ -334,96 +424,6 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* ? badge — someone wants an update from me */}
-      {pendingRequests.length > 0 && (
-        <Tooltip title={`${pendingRequests.length} update request${pendingRequests.length > 1 ? 's' : ''} pending`}>
-          <Box
-            onClick={() => setActiveRequest(pendingRequests[0])}
-            sx={{
-              position: 'fixed',
-              bottom: badgeBottom(slots.question),
-              right: 28,
-              width: 52,
-              height: 52,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
-              boxShadow: '0 4px 20px rgba(124, 58, 237, 0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              userSelect: 'none',
-              animation: 'buzz 0.6s ease-in-out infinite',
-              ...buzzKeyframes,
-              '&:hover': { opacity: 0.9 },
-            }}
-          >
-            <Typography sx={{ fontSize: '1.4rem', lineHeight: 1, color: '#fff', fontWeight: 700 }}>
-              ?
-            </Typography>
-            {pendingRequests.length > 1 && (
-              <Box sx={{ position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: '50%', bgcolor: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography sx={{ fontSize: '0.65rem', color: '#fff', fontWeight: 700, lineHeight: 1 }}>{pendingRequests.length}</Typography>
-              </Box>
-            )}
-          </Box>
-        </Tooltip>
-      )}
-
-      {/* ... bubble — I got an update response */}
-      {pendingResponses.length > 0 && (
-        <Tooltip title={`${pendingResponses.length} update${pendingResponses.length > 1 ? 's' : ''} received`}>
-          <Box
-            onClick={() => setActiveResponse(pendingResponses[0])}
-            sx={{
-              position: 'fixed',
-              bottom: badgeBottom(slots.ellipsis),
-              right: 28,
-              minWidth: 52,
-              height: 52,
-              px: 1.5,
-              borderRadius: '26px',
-              bgcolor: 'background.paper',
-              border: '2px solid rgba(167, 139, 250, 0.5)',
-              boxShadow: '0 4px 20px rgba(124, 58, 237, 0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '3px',
-              cursor: 'pointer',
-              userSelect: 'none',
-              animation: 'buzz 0.6s ease-in-out infinite',
-              animationDelay: '0.15s',
-              ...buzzKeyframes,
-              '&:hover': { borderColor: 'primary.light' },
-            }}
-          >
-            {[0, 1, 2].map(i => (
-              <Box
-                key={i}
-                sx={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: '50%',
-                  bgcolor: 'primary.light',
-                  animation: 'dotBounce 1s ease-in-out infinite',
-                  animationDelay: `${i * 0.15}s`,
-                  '@keyframes dotBounce': {
-                    '0%, 80%, 100%': { transform: 'scale(0.8)', opacity: 0.5 },
-                    '40%': { transform: 'scale(1.2)', opacity: 1 },
-                  },
-                }}
-              />
-            ))}
-            {pendingResponses.length > 1 && (
-              <Box sx={{ position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: '50%', bgcolor: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography sx={{ fontSize: '0.65rem', color: '#fff', fontWeight: 700, lineHeight: 1 }}>{pendingResponses.length}</Typography>
-              </Box>
-            )}
-          </Box>
-        </Tooltip>
-      )}
-
       {/* ✓ badge — a task I requested was completed */}
       {completionNotifications.length > 0 && (
         <Tooltip title={`${completionNotifications.length} task${completionNotifications.length > 1 ? 's' : ''} completed`}>
@@ -431,7 +431,7 @@ export default function DashboardPage() {
             onClick={() => setActiveCompletion(completionNotifications[0])}
             sx={{
               position: 'fixed',
-              bottom: badgeBottom(slots.check),
+              bottom: 28,
               right: 28,
               width: 52,
               height: 52,
@@ -444,7 +444,7 @@ export default function DashboardPage() {
               justifyContent: 'center',
               cursor: 'pointer',
               userSelect: 'none',
-              animation: 'buzz 0.6s ease-in-out infinite',
+              animation: 'buzz 2.5s ease-in-out infinite',
               animationDelay: '0.3s',
               ...buzzKeyframes,
               '&:hover': { bgcolor: 'rgba(74, 222, 128, 0.22)' },
